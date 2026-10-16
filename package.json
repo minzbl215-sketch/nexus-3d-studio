@@ -1,0 +1,21 @@
+{
+  "name": "nexus-3d-studio",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "three": "^0.160.0",
+    "idb": "^8.0.0",
+    "codemirror": "^6.0.1",
+    "@codemirror/lang-javascript": "^6.2.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.0",
+    "@capacitor/core": "^6.1.0",
+    "@capacitor/android": "^6.1.0",
+    "vite": "^5.2.0"
+  }
+}
