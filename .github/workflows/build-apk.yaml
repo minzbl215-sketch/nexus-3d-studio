@@ -1,0 +1,94 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build web (Vite)
+        run: npm run build
+
+      - name: Add Capacitor Android platform
+        run: |
+          npx cap add android
+          npx cap sync android
+
+      # ===== BAGIAN ICON =====
+      - name: Install ImageMagick
+        run: sudo apt-get update && sudo apt-get install -y imagemagick
+
+      - name: Generate Android icons from resources/icon.png
+        run: |
+          set -e
+          SRC="resources/icon.png"
+
+          # Cek file ada atau tidak
+          if [ ! -f "$SRC" ]; then
+            echo "❌ resources/icon.png TIDAK DITEMUKAN. Pakai ikon default."
+            exit 0
+          fi
+
+          echo "✅ Ketemu: $SRC"
+          identify "$SRC"
+
+          # Resize ke berbagai ukuran Android
+          declare -A SIZES=(
+            [mdpi]=48
+            [hdpi]=72
+            [xhdpi]=96
+            [xxhdpi]=144
+            [xxxhdpi]=192
+          )
+
+          for folder in "${!SIZES[@]}"; do
+            size="${SIZES[$folder]}"
+            dir="android/app/src/main/res/mipmap-${folder}"
+            mkdir -p "$dir"
+            convert "$SRC" -resize ${size}x${size}^ -gravity center \
+              -extent ${size}x${size} \
+              "$dir/ic_launcher.png"
+            cp "$dir/ic_launcher.png" "$dir/ic_launcher_round.png"
+            echo "✅ Dibuat: $dir/ic_launcher.png (${size}x${size})"
+          done
+
+          echo "🎉 Semua icon berhasil dibuat!"
+      # ===== SELESAI BAGIAN ICON =====
+
+      - name: Build Debug APK
+        working-directory: android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-3d-studio-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
