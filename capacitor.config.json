@@ -1,0 +1,8 @@
+{
+  "appId": "studio.nexus3d.app",
+  "appName": "NEXUS 3D STUDIO",
+  "webDir": "dist",
+  "android": {
+    "backgroundColor": "#0a0e1a"
+  }
+}
