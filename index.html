@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#0a0e1a" />
+<title>NEXUS 3D STUDIO</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden;
+    background: #0a0e1a; color: #e5e7eb;
+    font-family: -apple-system, system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent; user-select: none; }
+
+  #app { display: grid; grid-template-rows: 48px 1fr 40px; height: 100vh; }
+
+  #toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 8px; background: #111827; border-bottom: 1px solid #2a3548;
+  }
+  #toolbar button {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: #1a2233; border: 1px solid #2a3548;
+    color: #e5e7eb; font-size: 16px; cursor: pointer;
+  }
+  #toolbar button:active { transform: scale(0.92); background: #252f42; }
+  #toolbar .play { background: #22c55e; border-color: #22c55e; color: white; }
+  #toolbar .stop { background: #ef4444; border-color: #ef4444; color: white; }
+  #project-name { font-size: 13px; color: #9ca3af; }
+
+  #workspace { display: grid; grid-template-columns: 140px 1fr 160px; overflow: hidden; }
+  @media (max-width: 700px) {
+    #workspace { grid-template-columns: 1fr; }
+    #hierarchy, #inspector {
+      position: absolute; top: 48px; bottom: 40px; width: 200px;
+      background: #111827; z-index: 10; display: none;
+    }
+    #hierarchy { left: 0; border-right: 1px solid #2a3548; }
+    #inspector { right: 0; border-left: 1px solid #2a3548; }
+    #hierarchy.open, #inspector.open { display: block; }
+  }
+
+  #hierarchy, #inspector {
+    background: #111827; border-right: 1px solid #2a3548;
+    overflow-y: auto; padding: 8px;
+  }
+  #inspector { border-right: none; border-left: 1px solid #2a3548; }
+  .panel-title {
+    font-size: 11px; text-transform: uppercase; color: #9ca3af;
+    margin-bottom: 8px; letter-spacing: 0.5px;
+  }
+
+  .hier-item {
+    padding: 8px 10px; border-radius: 6px; font-size: 13px;
+    cursor: pointer; margin-bottom: 2px;
+  }
+  .hier-item.selected {
+    background: linear-gradient(90deg, #3aa7ff, #8b5cf6); color: white;
+  }
+
+  #viewport-container { position: relative; background: #0a0e1a; }
+  #viewport { width: 100%; height: 100%; display: block; touch-action: none; }
+
+  #mode-bar {
+    position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 4px; padding: 6px;
+    background: rgba(17,24,39,0.9); border-radius: 12px;
+    border: 1px solid #2a3548; backdrop-filter: blur(10px);
+  }
+  #mode-bar button {
+    width: 40px; height: 40px; border-radius: 8px;
+    background: transparent; border: none; color: #9ca3af;
+    font-size: 16px; cursor: pointer;
+  }
+  #mode-bar button.active { background: #3aa7ff; color: white; }
+
+  .inspector-row { display: grid; grid-template-columns: 30px 1fr; gap: 6px; margin-bottom: 6px; }
+  .inspector-row label { font-size: 11px; color: #9ca3af; align-self: center; }
+  .inspector-row input {
+    width: 100%; padding: 6px 8px; background: #0a0e1a;
+    border: 1px solid #2a3548; border-radius: 6px;
+    color: #e5e7eb; font-size: 12px; font-family: monospace;
+  }
+  .inspector-row input:focus { outline: none; border-color: #3aa7ff; }
+
+  #bottom-bar {
+    background: #111827; border-top: 1px solid #2a3548;
+    display: flex; align-items: center; padding: 0 8px; gap: 8px;
+    font-size: 12px; color: #6b7280;
+  }
+  #bottom-bar button {
+    background: transparent; border: none; color: #9ca3af;
+    font-size: 12px; cursor: pointer; padding: 6px 10px;
+  }
+  #bottom-bar .tab-active { color: #3aa7ff; border-bottom: 2px solid #3aa7ff; }
+
+  #console {
+    flex: 1; overflow: hidden; white-space: nowrap;
+    text-overflow: ellipsis; font-family: monospace; font-size: 11px;
+  }
+
+  #modal {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    display: none; align-items: center; justify-content: center; z-index: 100;
+  }
+  #modal.open { display: flex; }
+  #modal-card {
+    background: #111827; border: 1px solid #2a3548; border-radius: 12px;
+    padding: 20px; max-width: 320px; width: 90%;
+  }
+  #modal-card h3 { margin-bottom: 12px; font-size: 15px; }
+  .primitive-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .primitive-grid button {
+    padding: 14px 8px; background: #1a2233; border: 1px solid #2a3548;
+    border-radius: 8px; color: #e5e7eb; font-size: 12px; cursor: pointer;
+  }
+  .primitive-grid button:active { background: #3aa7ff; border-color: #3aa7ff; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="toolbar">
+    <div style="display:flex;gap:4px;align-items:center">
+      <button id="btn-menu">☰</button>
+      <span id="project-name">Untitled Project</span>
+    </div>
+    <div style="display:flex;gap:4px">
+      <button id="btn-undo">↶</button>
+      <button id="btn-redo">↷</button>
+      <button id="btn-add">＋</button>
+    </div>
+    <div style="display:flex;gap:4px">
+      <button id="btn-save">💾</button>
+      <button id="btn-play" class="play">▶</button>
+      <button id="btn-stop" class="stop" style="display:none">⏹</button>
+    </div>
+  </header>
+
+  <main id="workspace">
+    <aside id="hierarchy">
+      <div class="panel-title">Hierarchy</div>
+      <div id="hierarchy-list"></div>
+    </aside>
+
+    <section id="viewport-container">
+      <canvas id="viewport"></canvas>
+      <div id="mode-bar">
+        <button data-mode="translate" class="active">✥</button>
+        <button data-mode="rotate">↻</button>
+        <button data-mode="scale">⤢</button>
+      </div>
+    </section>
+
+    <aside id="inspector">
+      <div class="panel-title">Inspector</div>
+      <div id="inspector-content">
+        <p style="font-size:11px;color:#6b7280">Pilih objek dulu</p>
+      </div>
+    </aside>
+  </main>
+
+  <footer id="bottom-bar">
+    <button class="tab-active">Console</button>
+    <div id="console">Nexus 3D Studio siap. Klik + untuk tambah objek.</div>
+  </footer>
+</div>
+
+<div id="modal">
+  <div id="modal-card">
+    <h3>Tambah Objek</h3>
+    <div class="primitive-grid">
+      <button data-prim="Box">📦 Box</button>
+      <button data-prim="Sphere">⚪ Sphere</button>
+      <button data-prim="Plane">▭ Plane</button>
+      <button data-prim="Cylinder">🔵 Cylinder</button>
+      <button data-prim="Cone">🔺 Cone</button>
+      <button data-prim="Torus">🍩 Torus</button>
+      <button data-prim="Empty">⬜ Empty</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
