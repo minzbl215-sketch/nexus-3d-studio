@@ -38,7 +38,6 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      # ===== BAGIAN ICON =====
       - name: Install ImageMagick
         run: sudo apt-get update && sudo apt-get install -y imagemagick
 
@@ -47,7 +46,6 @@ jobs:
           set -e
           SRC="resources/icon.png"
 
-          # Cek file ada atau tidak
           if [ ! -f "$SRC" ]; then
             echo "❌ resources/icon.png TIDAK DITEMUKAN. Pakai ikon default."
             exit 0
@@ -56,7 +54,6 @@ jobs:
           echo "✅ Ketemu: $SRC"
           identify "$SRC"
 
-          # Resize ke berbagai ukuran Android
           declare -A SIZES=(
             [mdpi]=48
             [hdpi]=72
@@ -77,7 +74,6 @@ jobs:
           done
 
           echo "🎉 Semua icon berhasil dibuat!"
-      # ===== SELESAI BAGIAN ICON =====
 
       - name: Build Debug APK
         working-directory: android
